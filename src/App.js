@@ -1,6 +1,7 @@
-import React, {useState} from 'react';
+import React, {useState,useEffect,useCallback} from 'react';
 
 import MoviesList from './components/MoviesList';
+import AddMovie from './components/AddMovie';
 import './App.css';
 
 function App() {
@@ -40,27 +41,56 @@ function App() {
   // }
 
   //syntax:2 (using async-await)
-  async function fetchMoviesHandler(){
+  const fetchMoviesHandler = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("https://swapi.dev/api/films/");
+      const response = await fetch("https://http-react-33a71-default-rtdb.firebaseio.com/movies.json");
       if (!response.ok){
         throw new Error("Somewthing went wrong!");
       }
       const data = await response.json();
-      const transformedMovies = data.results.map(movie => {
-      return {id:movie.episode_id,
-        title:movie.title,
-        releaseDate:movie.release_date, 
-        director:movie.director};
-      });
-      setMovies(transformedMovies);
+      const movies = [];
+      for (const key in data){
+        movies.push({
+          id:key,
+          title:data[key].title,
+          releaseDate:data[key].releaseDate,
+          director:data[key].director
+
+        });
+      }
+      setMovies(movies);
     } catch (error){
       setError(error.message);
     }
     setIsLoading(false);
+  }, []);
+
+ 
+
+  async function addMovieHandler(movie){
+    try{
+      const response = await fetch("https://http-react-33a71-default-rtdb.firebaseio.com/movies.json", {
+        method: "POST",
+        body: JSON.stringify(movie),
+        headers: {
+        "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      console.log(data);
+    } catch(error){
+      // setError(error.message);
+      console.log(error.message);
+    }
   }
+
+  useEffect(() => {
+    fetchMoviesHandler();
+  }, []);
+
+
 
   // we can also write statements  and assign the element to be displayed in a variable 
   // based on the condition
@@ -83,6 +113,9 @@ function App() {
 
   return (
     <React.Fragment>
+      <section>
+        <AddMovie onAddMovie = {addMovieHandler}/>
+      </section>
       <section>
         <button onClick = {fetchMoviesHandler}>Fetch Movies</button>
       </section>
